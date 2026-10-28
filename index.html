@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>PanelLab | PLC 패널 설계</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="PanelLab 홈"><span class="brand-mark">P</span><span>Panel<span class="brand-light">Lab</span></span></a>
+    <div class="topbar-right"><span class="local-badge"><span></span>파일은 이 기기에서만 처리됩니다</span><button class="button button-quiet" id="new-project">새 작업</button></div>
+  </header>
+
+  <main class="shell">
+    <section class="page-heading">
+      <div>
+        <p class="eyebrow">PLC PANEL DESIGN WORKSPACE</p>
+        <h1>PLC 패널 자동 작화</h1>
+        <p class="subtitle">자료를 확인하고 입력하면 패널 배치와 배선도 초안을 만들어 드립니다.</p>
+      </div>
+      <div class="step-indicator" aria-label="작업 단계">
+        <span class="step active"><b>1</b> 자료 확인</span><i></i><span class="step"><b>2</b> 정보 입력</span><i></i><span class="step"><b>3</b> 배치 검토</span>
+      </div>
+    </section>
+
+    <div class="notice" role="note"><span class="notice-icon">i</span><div><strong>안전 안내</strong><span>도면 자동 인식(OCR)은 지원하지 않습니다. 확인되지 않은 모델·주소·배선은 생성하지 않으며, 결과는 검토용 초안입니다. 실제 제작 전 설계자 검증이 필요합니다.</span></div></div>
+
+    <section class="card source-card">
+      <div class="section-title"><div><span class="section-number">01</span><h2>자료 확인</h2></div><span class="section-hint">PDF · PNG · JPG</span></div>
+      <label class="upload-zone" id="drop-zone" for="file-input">
+        <input id="file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" multiple>
+        <span class="upload-icon">↑</span><strong>도면 파일을 여기에 놓거나 <em>파일 선택</em></strong><small>PDF, PNG, JPG · 브라우저에서 미리보기만 합니다. 내용은 자동 추출되지 않습니다.</small>
+      </label>
+      <div id="file-status" class="file-status" aria-live="polite"></div>
+      <div id="file-list" class="file-list"></div>
+      <div id="preview-wrap" class="preview-wrap hidden">
+        <div class="preview-heading"><strong id="preview-name">미리보기</strong><button class="text-button" id="close-preview" type="button">미리보기 닫기</button></div>
+        <div class="preview-stage" id="preview-stage"></div>
+      </div>
+    </section>
+
+    <section class="card config-card">
+      <div class="section-title"><div><span class="section-number">02</span><h2>확인한 설비 정보 입력</h2></div><span class="section-hint">도면에서 확인한 내용만 입력하세요</span></div>
+      <div class="subsection">
+        <div class="subsection-heading"><span class="mini-icon">▦</span><div><h3>PLC CPU</h3><p>형식이 확인되지 않으면 비워 두세요.</p></div></div>
+        <div class="form-grid cpu-grid">
+          <label>제조사<input id="cpu-maker" type="text" placeholder="예: 미쓰비시"></label>
+          <label>CPU 모델<input id="cpu-model" type="text" placeholder="도면에 표기된 형식"></label>
+          <label>설치 위치<input id="cpu-location" type="text" placeholder="예: 제어반 1면"></label>
+        </div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-heading"><span class="mini-icon">▤</span><div><h3>PLC 모듈</h3><p>슬롯 순서는 왼쪽에서 오른쪽 방향 기준입니다.</p></div></div>
+        <form id="module-form" class="entry-form module-form">
+          <label>모듈 모델<input name="model" type="text" required placeholder="확인된 형식"></label>
+          <label>종류<select name="kind" required><option value="">선택</option><option>입력</option><option>출력</option><option>혼합</option><option>전원</option><option>통신</option><option>기타</option></select></label>
+          <label>채널 수<input name="channels" type="number" min="1" max="512" placeholder="I/O 채널 수"></label>
+          <label>슬롯 순서<input name="slot" type="number" min="1" placeholder="1부터 시작"></label>
+          <button class="button button-primary" type="submit">모듈 추가</button>
+        </form>
+        <div class="table-wrap">
+          <table><thead><tr><th>순서</th><th>모델</th><th>종류</th><th>채널</th><th></th></tr></thead><tbody id="module-rows"><tr class="empty-row"><td colspan="5">아직 등록된 모듈이 없습니다.</td></tr></tbody></table>
+        </div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-heading"><span class="mini-icon">⌁</span><div><h3>기기 태그 · I/O · 단자대</h3><p>주소와 채널은 도면/사양서에서 확인 후 입력하세요.</p></div></div>
+        <form id="tag-form" class="entry-form tag-form">
+          <label>기기 태그<input name="tag" type="text" required placeholder="예: LS-101"></label>
+          <label>기기 설명<input name="description" type="text" placeholder="예: 리미트 스위치"></label>
+          <label>I/O 종류<select name="direction" required><option value="">선택</option><option>입력</option><option>출력</option></select></label>
+          <label>주소<input name="address" type="text" placeholder="확인된 주소"></label>
+          <label>모듈<select name="moduleId"><option value="">미지정</option></select></label>
+          <label>채널 번호<input name="channel" type="number" min="1" placeholder="모듈 채널"></label>
+          <label>단자대 번호<input name="terminal" type="text" placeholder="예: TB1-01"></label>
+          <label>배선 정보<input name="wire" type="text" placeholder="전선 번호/규격 등"></label>
+          <button class="button button-primary" type="submit">태그 추가</button>
+        </form>
+        <div class="table-wrap">
+          <table class="tag-table"><thead><tr><th>태그</th><th>설명</th><th>I/O</th><th>주소</th><th>모듈 / 채널</th><th>단자대</th><th>배선</th><th></th></tr></thead><tbody id="tag-rows"><tr class="empty-row"><td colspan="8">아직 등록된 태그가 없습니다.</td></tr></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <section class="card layout-card">
+      <div class="section-title"><div><span class="section-number">03</span><h2>자동 배치 · 검토</h2></div><button id="generate-button" class="button button-primary">배치 초안 만들기</button></div>
+      <p class="section-description">등록한 CPU와 모듈의 순서, 확인된 기기 태그 연결을 바탕으로 SVG 배치도 및 배선 표시를 생성합니다.</p>
+      <div id="validation" class="validation hidden" aria-live="polite"></div>
+      <div class="drawing-wrap" id="drawing-wrap"><div class="drawing-placeholder"><span>▧</span><strong>아직 배치도가 없습니다</strong><small>설비 정보를 입력한 뒤 “배치 초안 만들기”를 선택하세요.</small></div></div>
+    </section>
+
+    <section class="card export-card">
+      <div class="section-title"><div><span class="section-number">04</span><h2>내보내기</h2></div><span class="section-hint">입력한 검토 데이터 기준</span></div>
+      <div class="export-options">
+        <div class="export-option"><span class="export-icon">SVG</span><div><strong>패널 배치도</strong><small>벡터 도면 파일</small></div><button class="button button-outline" id="download-svg" disabled>SVG 저장</button></div>
+        <div class="export-option"><span class="export-icon">CSV</span><div><strong>I/O 태그 목록</strong><small>일반 CSV · GX Works 호환 파일이 아닙니다</small></div><button class="button button-outline" id="download-csv">CSV 저장</button></div>
+        <div class="export-option"><span class="export-icon">JSON</span><div><strong>작업 데이터</strong><small>입력한 설비 정보와 태그</small></div><button class="button button-outline" id="download-json">JSON 저장</button></div>
+        <div class="export-option"><span class="export-icon">PDF</span><div><strong>인쇄 / PDF</strong><small>브라우저 인쇄 기능을 사용합니다</small></div><button class="button button-outline" id="print-button">인쇄하기</button></div>
+      </div>
+      <p class="export-footnote">GX Works 프로젝트 파일 생성, PLC 다운로드 및 제어 기능은 제공하지 않습니다.</p>
+    </section>
+    <footer>PanelLab <span>· 로컬 작업 공간 · 설계 결과는 반드시 전문 인력이 검토해야 합니다.</span></footer>
+  </main>
+</body>
+</html>
